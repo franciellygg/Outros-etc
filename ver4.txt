@@ -1,0 +1,114 @@
+libname A_GERAL "/sasdata/DEF/def_cm/pf/geral/";
+libname KAR "/sasdata/PÚBLICO/"
+
+/*Criar uma base sem senha*/
+data prod_empf_201803_lime_parc;
+SET A_GERAL.prod_empf_201803_lime_parcelado (Pw=CMRLIME);
+RUN;
+
+/****AVALIANDO POR CPF, CONFORME O MODELO MARCOU ***/
+/*Abrir o arquivo do servidor CMR_DMSKD_TAB.TXT*/
+PROC SQL;
+delete from WORK.CMR_dmskd_tab
+where arquivo='arquivo';
+quit;
+
+/*DIA 2*/
+libname KAR2 '/sasdata/CREDITO/Karin';
+libname KAR '/sasdata/PUBLICO';
+
+
+data KAR2.prod_empf_201803_lime_parc;
+SET KAR2.prod_empf_201803_lime_parc;
+teste_cpf = put(Cpf,z9.);
+teste_cpf2 = put(Cpf_Dig,z2.);
+agencia2 = put(Cod_Agencia_Cli,z5.);
+conta2 = put(Conta_Corr_Cli,z7.);
+cpf_completo = compress(teste_cpf||teste_cpf2);
+drop teste_cpf teste_cpf2;
+RUN;
+
+/*options obs=100;*/
+data KAR2.CMR_dmskd_tab;
+set WORK.CMR_dmskd_tab;
+length teste_cpf $15.;
+length cpf_basico $9.;
+length cpf_ctr $2.;
+length cpf_completo $11.;
+length agencia2 $5.;
+length conta2 $7.;
+teste_intermed = input(numero_cpf_cnpj,15.);
+teste_cpf = put(teste_intermed,z15.);
+cpf_basico = substr(teste_cpf,1,9);
+cpf_ctr = substr(teste_cpf,14,2);
+cpf_completo = compress(cpf_basico||cpf_ctr);
+drop teste_intermed teste_cpf cpf_basico cpf_ctr;
+teste_intermed = input(agencia,5.);
+teste_intermed2 = input(conta,7.);
+agencia2 = put(agencia,z5.);
+conta2 = put(conta,z7.);
+run; 
+options obs=max;
+
+
+/*Separar p, np e na*/
+DATA KAR2.CMR_dmskd_push;
+SET KAR2.CMR_dmskd_tab;
+grupo = SUBSTR(arquivo,length(arquivo)-2);
+grupo = put(grupo,z3.);
+RUN;
+/* 918404 linhas */
+
+/* CLIENTES COM PUSH, JOIN POR CPF*/
+proc sql;
+create table KAR2.CMR_dmskd_push_contr_cp as
+select *
+from KAR2.CMR_dmskd_push a inner join KAR2.prod_empf_201803_lime_parc b on 
+a.cpf_completo = b.cpf_completo where PRODUTO = "CP Parcelado";
+run;
+/* 7614 linhas*/
+
+/*Contar cpfs propensos que contrataram CRED.PARCELADO*/
+proc sql;
+select count(distinct cpf_completo) as CPF from KAR2.CMR_dmskd_push_contr_cp where grupo="p_t" or grupo="p_c";
+quit;
+/*Resultado 2259 cpfs, 1975 p_t, 464 p_c = 2439*/
+
+/*Contar cpfs não propensos que contrataram CRED.PARCELADO*/
+proc sql;
+select count(distinct cpf_completo) as CPF from KAR2.CMR_dmskd_push_contr_cp where grupo="_np";
+quit;
+/*Resultado 4507 cpfs*/
+
+/*Contar cpfs na que contrataram CRED.PARCELADO*/
+/*total - np y p */
+/*Resultado 848 cpfs*/
+
+
+/* CLIENTES COM PUSH, JOIN POR AGENCIA E CONTA*/
+proc sql;
+create table KAR2.CMR_dmskd_push_contr_cp as
+select *
+from KAR2.CMR_dmskd_push a inner join KAR2.prod_empf_201803_lime_parc b on 
+a.cpf_completo = b.cpf_completo where PRODUTO = "CP Parcelado";
+run;
+/* 7614 linhas*/
+
+/*Contar cpfs propensos que contrataram CRED.PARCELADO*/
+proc sql;
+select count(distinct cpf_completo) as CPF from KAR2.CMR_dmskd_push_contr_cp where grupo="p_t" or grupo="p_c";
+quit;
+/*Resultado 2259 cpfs*/
+
+/*Contar cpfs não propensos que contrataram CRED.PARCELADO*/
+proc sql;
+select count(distinct cpf_completo) as CPF from KAR2.CMR_dmskd_push_contr_cp where grupo="_np";
+quit;
+/*Resultado 4507 cpfs*/
+
+/*Contar cpfs na que contrataram CRED.PARCELADO*/
+/*total - np y p */
+/*Resultado 848 cpfs*/
+
+prod_empf_201803_lime_parc
+CMR_dmskd_push

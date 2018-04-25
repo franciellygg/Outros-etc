@@ -1,0 +1,72 @@
+LIME
+
+RECARGA DE CELULAR
+
+Base de transações usada: transacao_cpf_ag_conta_16_17_v1 (contendo as transações de 01/01/2016 a 30/09/2017
+
+1.Quantidade, valor médio, valor mínimo, valor máximo das transações de RECARGA em cada faixa de hora 1
+
+c
+
+
+
+2.Quantidade, valor médio, valor mínimo, valor máximo das transações de RECARGA em cada faixa de hora 2
+
+select faixa_hora2, count(*) as qtd_por_faixa, avg(valor) as media_valor, min(valor) as min_valor, max(valor) as max_valor from 
+(
+select 
+a.valor,
+case when a.hora between 0 and 3 then '0:00-3:59' 
+when a.hora between 4 and 7 then '4:00-7:59' 
+when a.hora between 8 and 11 then '8:00-11:59' 
+when a.hora between 12 and 15 then '12:00-15:59'
+when a.hora between 16 and 19 then '16:00-19:59' else '20:00-23:59' end as faixa_hora2,
+b.sub_classe
+from transacao_cpf_ag_conta_16_17_v1 a left join cods_classes b on a.codigo_transacao = b.codigo_transacao
+) c
+where sub_classe = "RECARGA" group by faixa_hora2;
+
+
+3.Quantidade, valor médio, valor mínimo, valor máximo das transações de RECARGA por mês de 2016
+
+select mes, count(*) as qtd_por_faixa, avg(valor) as media_valor, min(valor) as min_valor, max(valor) as max_valor from 
+(
+select 
+a.valor,
+a.mes,
+b.sub_classe
+from transacao_cpf_ag_conta_16_17_v1 a left join cods_classes b on a.codigo_transacao = b.codigo_transacao
+) c
+where sub_classe = "RECARGA" and ano = 2016 group by mes;
+
+
+
+4.Quantidade, valor médio, valor mínimo, valor máximo das transações de RECARGA por mês de 2017
+
+select mes, count(*) as qtd_por_faixa, avg(valor) as media_valor, min(valor) as min_valor, max(valor) as max_valor from 
+(
+select 
+a.valor,
+a.mes,
+b.sub_classe
+from transacao_cpf_ag_conta_16_17_v1 a left join cods_classes b on a.codigo_transacao = b.codigo_transacao
+) c
+where sub_classe = "RECARGA" and ano = 2017 group by mes;
+
+
+
+5.Quantidade, valor médio, valor mínimo, valor máximo das transações de RECARGA por dia da semana
+
+select mes, count(*) as qtd_por_faixa, avg(valor) as media_valor, min(valor) as min_valor, max(valor) as max_valor from 
+(
+select 
+a.valor,
+a.mes,
+b.sub_classe
+from transacao_cpf_ag_conta_16_17_v1 a left join cods_classes b on a.codigo_transacao = b.codigo_transacao
+) c
+where sub_classe = "RECARGA" group by mes;
+
+
+
+6.Quantidade, valor médio, valor mínimo, valor máximo das transações de RECARGA por semana / fim de semana
